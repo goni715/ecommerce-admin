@@ -1,5 +1,4 @@
-import Layout from "../components/Layout/Layout.jsx";
-import {Button} from "@/components/ui/button.jsx";
+import {Button} from "@material-tailwind/react";
 
 
 const DashboardPage = () => {

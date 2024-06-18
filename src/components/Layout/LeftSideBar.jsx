@@ -1,7 +1,6 @@
 import logo from "../../assets/images/logo.png";
 import {navLinks} from "../../data/data.jsx";
 import {Link, useLocation} from "react-router-dom";
-import { CircleUser } from 'lucide-react';
 
 const LeftSideBar = () => {
     const location = useLocation();

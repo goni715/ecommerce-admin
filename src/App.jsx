@@ -1,7 +1,7 @@
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import DashboardPage from "./pages/DashboardPage.jsx";
-import CreateCollectionPage from "@/pages/CreateCollectionPage.jsx";
-import Layout from "@/components/Layout/Layout.jsx";
+import CreateCollectionPage from "./pages/CreateCollectionPage.jsx";
+import Layout from "./components/Layout/Layout.jsx";
 
 
 const App = () => {
