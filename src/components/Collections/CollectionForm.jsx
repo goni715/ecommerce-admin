@@ -1,15 +1,15 @@
-import macbook from "../../assets/images/macbook.png";
 import {Button, Card, Input, Textarea, Typography} from "@material-tailwind/react";
 import ErrorText from "../Validation/ErrorText.jsx";
 import { Plus, Trash } from "lucide-react";
 import {useForm} from "react-hook-form";
 import {useEffect, useState} from "react";
 import convertToBase64 from "../../helper/convertToBase64.js";
+import {useCreateCollectionMutation} from "../../redux/features/collection/collectionApi.js";
 
 
 
 const CollectionForm = () => {
-
+    const [createCollection, {isLoading, isSuccess}] = useCreateCollectionMutation();
     const [image, setImage] = useState();
     const {
         register,
@@ -18,14 +18,18 @@ const CollectionForm = () => {
         watch,
         setValue,
         formState: { errors },
-    } = useForm();
+    } = useForm({
+        defaultValues:{
+            files: []
+        }
+    });
 
     const files = watch("files");
 
 
     useEffect(()=>{
         (async () => {
-            if(files){
+            if(files.length>0){
                 const base64 = await convertToBase64(files[0]);
                 setImage(base64);
             }
@@ -43,7 +47,7 @@ const CollectionForm = () => {
 
 
     const handleFileRemove = () => {
-      setValue('files', null);
+      setValue('files', []);
     }
 
 
@@ -55,7 +59,7 @@ const CollectionForm = () => {
         formData.append("title", title);
         formData.append("description", description);
         formData.append("image", files[0]);
-
+        createCollection(formData);
     }
 
 
@@ -69,8 +73,8 @@ const CollectionForm = () => {
         <>
             <div className="p-5">
                 <Card color="transparent" className="px-7 py-3 bg-white" shadow={true}>
-                    <p className="text-heading2-bold mb-2">Create Collection</p>
-                    <hr className="border-b border-gray-400"/>
+                    <p className="text-heading2-bold text-center mb-2">Create Collection</p>
+                    {/*<hr className="border-b border-gray-400"/>*/}
                     <form onSubmit={handleSubmit(onSubmit)} className="mt-4 grid grid-cols-1">
                         <div className="flex flex-col space-y-2 mb-6">
                             <div className="flex flex-col space-y-6">
@@ -119,7 +123,7 @@ const CollectionForm = () => {
 
                         {/*Preview Image Field*/}
                         {
-                            files ? (
+                            files.length>0 ? (
                                 <div>
                                     <div className="mb-4 flex flex-wrap items-center gap-4">
                                         <div className="w-[200px] h-[200px] relative rounded-lg border">
@@ -142,14 +146,14 @@ const CollectionForm = () => {
                                         Upload Image
                                     </Button>
 
-                                    {errors?.files?.message && (
-                                        <ErrorText>
-                                            {errors?.files?.message}
-                                        </ErrorText>
-                                    )}
                                 </div>
                             )
                         }
+                        {errors?.files?.message && (
+                            <ErrorText>
+                                {errors?.files?.message}
+                            </ErrorText>
+                        )}
 
                         <div>
                             <Input
@@ -161,10 +165,24 @@ const CollectionForm = () => {
                                 }}
                                 {...register("files",
                                     {
-                                        required: "Select an Image",
+                                        required: "Image is required!",
+                                        validate: (value)=>{
+                                            let fileType = value[0]['type'];
+                                            let fileSize = value[0]['size'];
+                                            console.log(value)
+
+                                            if(fileType !== "image/jpeg"){
+                                                return "Select an Image"
+                                            }
+                                            else if(fileSize > 1048576){
+                                                return "Image file size maximum 1 MB"
+                                            }
+
+                                        }
                                     })}
                                 error={Boolean(errors?.files?.message)}
                                 hidden
+                                accept="image/*"
                             />
                         </div>
 
@@ -172,8 +190,8 @@ const CollectionForm = () => {
 
 
                         <div className="flex gap-10 -mt-5">
-                            <Button type="submit" className="bg-blue-1 text-white">
-                                Submit
+                            <Button disabled={isLoading} type="submit" className={`bg-blue-1 text-white disabled:cursor-not-allowed ${isLoading && "capitalize"}`}>
+                                {isLoading ? "Processing..." : "Submit"}
                             </Button>
                             <Button
                                 type="button"
