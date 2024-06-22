@@ -1,33 +1,56 @@
 import {Button, Card, Input, Textarea, Typography} from "@material-tailwind/react";
 import ErrorText from "../Validation/ErrorText.jsx";
-import { Plus, Trash } from "lucide-react";
+import { Plus, Trash, Pencil} from "lucide-react";
 import {useForm} from "react-hook-form";
 import {useEffect, useState} from "react";
 import convertToBase64 from "../../helper/convertToBase64.js";
-import {useCreateCollectionMutation} from "../../redux/features/collection/collectionApi.js";
+import {
+    useUpdateCollectionMutation, useUpdateCollectionWithImageMutation
+} from "../../redux/features/collection/collectionApi.js";
 import {useDispatch, useSelector} from "react-redux";
 import Error from "../Validation/Error.jsx";
-import {SetCollectionError} from "../../redux/features/collection/collectionSlice.js";
+import {
+    SetCollectionEditError,
+    SetCollectionId
+} from "../../redux/features/collection/collectionSlice.js";
 import {useNavigate} from "react-router-dom";
+import {SetCollectionDeleteModalOpen} from "../../redux/features/modal/modalSlice.js";
+import CollectionDeleteModal from "../modal/CollectionDeleteModal.jsx"
 import placeholder from "../../assets/images/placeholder.png";
 
 
 
-
-const CollectionForm = () => {
-    const [createCollection, {isLoading, isSuccess}] = useCreateCollectionMutation();
+const CollectionEditForm = ({collection}) => {
+    const [updateCollection, {isLoading, isSuccess}] = useUpdateCollectionMutation();
+    const [updateCollectionWithImage, {isLoading:loading, isSuccess:success}] = useUpdateCollectionWithImageMutation();
     const [image, setImage] = useState();
     const dispatch = useDispatch();
     const navigate = useNavigate();
-    const error = useSelector((state)=> state.collection.error);
+    const error = useSelector((state)=> state.collection.editError);
+
+    const {
+        _id,
+        title:initialTitle,
+        description:initialDescription,
+        image:initialImage,
+    } = collection || {};
+
+    const {public_id, image_url} = initialImage || {};
+
+
+
+
     const {
         register,
         handleSubmit,
         watch,
         setValue,
+        clearErrors,
         formState: { errors },
     } = useForm({
         defaultValues:{
+            title: initialTitle,
+            description: initialDescription,
             files: []
         }
     });
@@ -46,6 +69,14 @@ const CollectionForm = () => {
 
 
 
+    useEffect(()=>{
+        if(isSuccess || success){
+            navigate('/collections');
+        }
+    },[navigate,success, isSuccess]);
+
+
+
 
 
     //click on input file
@@ -55,16 +86,13 @@ const CollectionForm = () => {
 
 
     const handleFileRemove = () => {
-      setValue('files', []);
+        setValue('files', []);
     }
 
-
-
-    useEffect(()=>{
-        if(isSuccess){
-            navigate('/collections');
-        }
-    },[navigate,isSuccess]);
+    // Handle click to clear errors for a specific field
+    const handleRemoveError = () => {
+        clearErrors('files'); // Replace 'fieldName' with your actual field name
+    };
 
 
 
@@ -73,9 +101,23 @@ const CollectionForm = () => {
         let formData = new FormData();
         formData.append("title", title);
         formData.append("description", description);
+        formData.append("public_id", public_id);
         formData.append("image", files[0]);
-        dispatch(SetCollectionError(""));
-        createCollection(formData);
+        dispatch(SetCollectionEditError(""));
+        if(files.length===0) {
+            updateCollection({
+                id: _id,
+                data: {
+                    title,
+                    description
+                }
+            })
+        }else{
+            updateCollectionWithImage({
+                id:_id,
+                data: formData
+            });
+        }
     }
 
 
@@ -89,8 +131,18 @@ const CollectionForm = () => {
         <>
             <div className="p-5">
                 <Card color="transparent" className="px-7 py-3 bg-white" shadow={true}>
-                    <p className="text-heading2-bold text-center mb-2">Create Collection</p>
-                    {/*<hr className="border-b border-gray-400"/>*/}
+                    <div className="flex items-center justify-between mb-3">
+                        <p className="text-heading2-bold">Edit Collections</p>
+                        <button
+                            onClick={()=> {
+                                dispatch(SetCollectionId(_id));
+                                dispatch(SetCollectionDeleteModalOpen(true))
+                            }}
+                            className="p-3 bg-red-1 text-white cursor-pointer rounded-lg">
+                            <Trash className="h-4 w-4"/>
+                        </button>
+                    </div>
+                    <hr className="border-b border-gray-400"/>
                     {error && (
                         <>
                             <Error message={error}/>
@@ -146,17 +198,20 @@ const CollectionForm = () => {
 
                         {/*Preview Image Field*/}
                         {
-                            files.length>0 ? (
+                            files.length > 0 ? (
                                 <div>
                                     <div className="mb-4 flex flex-wrap items-center gap-4">
                                         <div className="w-[200px] h-[200px] relative rounded-lg border">
                                             <img
                                                 className="object-center rounded-lg border w-[200px] h-[200px]"
-                                                 src={image || placeholder}
-                                                 alt="collection"
+                                                src={image || placeholder}
+                                                alt="collection"
                                             />
                                             <div
-                                                onClick={handleFileRemove}
+                                                onClick={()=>{
+                                                    handleFileRemove();
+                                                    handleRemoveError()
+                                                }}
                                                 className="absolute right-0 top-0 z-10 p-3 bg-red-1 text-white cursor-pointer rounded-lg">
                                                 <Trash className="h-4 w-4"/>
                                             </div>
@@ -165,12 +220,20 @@ const CollectionForm = () => {
                                 </div>
                             ) : (
                                 <div>
-                                    <Button onClick={handleClickButton}
-                                            className="capitalize bg-grey-1 flex items-center text-white mb-2 cursor-pointer">
-                                        <Plus className="h-4 w-4 mr-2"/>
-                                        Upload Image
-                                    </Button>
-
+                                    <div className="mb-4 flex flex-wrap items-center gap-4">
+                                        <div className="w-[200px] h-[200px] relative rounded-lg border">
+                                            <img
+                                                className="object-center rounded-lg border w-[200px] h-[200px]"
+                                                src={image_url || placeholder}
+                                                alt="collection"
+                                            />
+                                            <div
+                                                onClick={handleClickButton}
+                                                className="absolute left-0 top-0 z-10 p-3 bg-black text-white cursor-pointer rounded-lg">
+                                                <Pencil className="h-4 w-4"/>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             )
                         }
@@ -190,17 +253,19 @@ const CollectionForm = () => {
                                 }}
                                 {...register("files",
                                     {
-                                        required: "Image is required!",
-                                        validate: (value)=>{
-                                            let fileType = (value[0]['type']).split("/")[0];
-                                            let fileSize = value[0]['size'];
-                                            console.log(fileType)
-
-                                            if(fileType !== "image"){
-                                                return "Select an Image File"
+                                        validate: (value) => {
+                                            if(value.length>0){
+                                                let fileType = value[0]?.type.split("/")[0];
+                                                let fileSize = value[0]?.size;
+                                                if (fileType !== "image") {
+                                                    return "Select an Image File"
+                                                } else if (fileSize > 1048576) {
+                                                    return "Image file size maximum 1 MB"
+                                                }
                                             }
-                                            else if(fileSize > 1048576){
-                                                return "Image file size maximum 1 MB"
+
+                                            if(image_url ==="" && files.length===0){
+                                               return "Image is required!"
                                             }
 
                                         }
@@ -212,16 +277,20 @@ const CollectionForm = () => {
                         </div>
 
 
-
-
                         <div className="flex gap-10 -mt-5">
                             <Button
-                                disabled={isLoading}
+                                disabled={isLoading || loading}
                                 type="submit"
                                 className={`bg-blue-1 text-white disabled:cursor-not-allowed capitalize`}
-                                loading={isLoading}
+                                loading={isLoading || loading}
                             >
-                                {isLoading ? "Processing..." : "Submit"}
+                                {
+                                    isLoading===true || loading===true ? (
+                                        "Processing..."
+                                    ): (
+                                        "Save Changes"
+                                    )
+                                }
                             </Button>
                             <Button
                                 onClick={()=>navigate('/collections')}
@@ -236,8 +305,10 @@ const CollectionForm = () => {
                     </form>
                 </Card>
             </div>
+
+            <CollectionDeleteModal/>
         </>
     );
 };
 
-export default CollectionForm;
+export default CollectionEditForm;

@@ -1,7 +1,7 @@
 import CollectionForm from "../components/Collections/CollectionForm.jsx";
 
 
-const CreateCollectionPage = () => {
+const CollectionCreatePage = () => {
     return (
         <>
             <CollectionForm/>
@@ -9,4 +9,4 @@ const CreateCollectionPage = () => {
     );
 };
 
-export default CreateCollectionPage;
+export default CollectionCreatePage;

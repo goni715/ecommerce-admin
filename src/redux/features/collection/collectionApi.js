@@ -1,28 +1,28 @@
 import {apiSlice} from "../api/apiSlice.js";
 import {ErrorToast, SuccessToast} from "../../../helper/ValidationHelper.js";
 import {HideLoader, ShowLoader} from "../settings/settingsSlice.js";
+import {SetCollectionEditError, SetCollectionError} from "./collectionSlice.js";
 
 
 export const collectionApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
-        getProducts: builder.query({
-            query: () => `/product/get-all-product`,
-            providesTags: ["Products"],
+        getCollections: builder.query({
+            query: () => `/collection/get-collections`,
+            providesTags: ["Collections"],
             keepUnusedDataFor: 600,
             async onQueryStarted(arg, {queryFulfilled}){
                 try{
                     const res = await queryFulfilled;
                 }catch(err) {
-                    ErrorToast("Something Went Wrong!");
                     //do nothing
-                    console.log(err);
+                    //console.log(err);
                 }
             },
         }),
-        getProduct: builder.query({
-            query: (id) => `/product/get-product/${id}`,
+        getCollection: builder.query({
+            query: (id) => `/collection/get-collection/${id}`,
             providesTags: (result, error, arg) => [
-                {type: "Product", id:arg}, //Dynamic Tag
+                {type: "Collection", id:arg}, //Dynamic Tag
             ],
             keepUnusedDataFor:600,
             async onQueryStarted(arg, {queryFulfilled, }){
@@ -30,7 +30,7 @@ export const collectionApi = apiSlice.injectEndpoints({
                     const res = await queryFulfilled;
                     // const data = res?.data?.data;
                 }catch(err) {
-                    ErrorToast("Something Went Wrong!");
+                    //ErrorToast("Something Went Wrong!");
                     //do nothing
                     console.log(err);
                 }
@@ -43,69 +43,72 @@ export const collectionApi = apiSlice.injectEndpoints({
                 body: data,
             }),
             invalidatesTags: ["Collections"],
-            async onQueryStarted(arg, {queryFulfilled}){
+            async onQueryStarted(arg, {queryFulfilled, dispatch}){
                 try{
                     const res = await queryFulfilled;
                     if(res?.data?.message === "success"){
-                        SuccessToast("Product Create Success");
+                        SuccessToast("Collection Create Success");
                     }
                 }catch(err) {
-                    console.log(err)
-                    if(err?.error?.data?.data?.keyPattern){
-                        if(err?.error?.data?.data?.keyPattern['slug'] === 1){
-                            ErrorToast("Failled! Product Name Already Existed")
-                        }
+                    const status = err?.error?.status;
+                    if(status === 409){
+                        dispatch(SetCollectionError("This title is already taken!"));
+                    }
+                    else if(status === 400){
+                        dispatch(SetCollectionError("Please provide a file!"));
+                    }else{
+                        dispatch(SetCollectionError("Something Went Wrong"));
                     }
                 }
             }
         }),
-        updateProduct: builder.mutation({
+        updateCollection: builder.mutation({
             query: ({id,data}) => ({
-                url: `/product/update-product/${id}`,
+                url: `/collection/update-collection/${id}`,
                 method: "PUT",
                 body: data
             }),
             invalidatesTags: (result, error, arg) => [
-                "Products",
-                {type: "Product", id:arg.id}, //Dynamic Tag
+                "Collections",
+                {type: "Collection", id:arg.id}, //Dynamic Tag
             ],
-            async onQueryStarted(arg, {queryFulfilled}){
+            async onQueryStarted(arg, {queryFulfilled,dispatch}){
                 try{
                     const res = await queryFulfilled;
                     if(res?.data?.message === "success"){
                         SuccessToast("Update Success");
                     }
                 }catch(err) {
-                    console.log(err)
+                    //console.log(err)
                     if(err?.error?.data?.data?.keyPattern){
                         if(err?.error?.data?.data?.keyPattern['slug'] === 1){
-                            ErrorToast("Failled! Product Name Already Existed")
+                            dispatch(SetCollectionEditError("This title is already taken!"));
                         }
                     }
                 }
             }
         }),
-        updateProductWithImage: builder.mutation({
+        updateCollectionWithImage: builder.mutation({
             query: ({id,data}) => ({
-                url: `/product/update-product-with-image/${id}`,
+                url: `/collection/update-collection-with-image/${id}`,
                 method: "PUT",
                 body: data
             }),
             invalidatesTags: (result, error, arg) => [
-                "Products",
-                {type: "Product", id:arg.id}, //Dynamic Tag
+                "Collections",
+                {type: "Collection", id:arg.id}, //Dynamic Tag
             ],
-            async onQueryStarted(arg, {queryFulfilled}){
+            async onQueryStarted(arg, {queryFulfilled, dispatch}){
                 try{
                     const res = await queryFulfilled;
                     if(res?.data?.message === "success"){
                         SuccessToast("Update Success");
                     }
                 }catch(err) {
-                    console.log(err)
+                    //console.log(err)
                     if(err?.error?.data?.data?.keyPattern){
                         if(err?.error?.data?.data?.keyPattern['slug'] === 1){
-                            ErrorToast("Failled! Product Name Already Existed")
+                            dispatch(SetCollectionEditError("This title is already taken!"));
                         }
                     }
                 }
@@ -135,12 +138,12 @@ export const collectionApi = apiSlice.injectEndpoints({
                 }
             }
         }),
-        deleteProduct: builder.mutation({
+        deleteCollection: builder.mutation({
             query: (id) => ({
-                url: `/product/delete-product/${id}`,
+                url: `/collection/delete-collection/${id}`,
                 method: "DELETE"
             }),
-            invalidatesTags: ["Products"],
+            invalidatesTags: ["Collections"],
             async onQueryStarted(arg, {queryFulfilled}){
                 try{
                     const res = await queryFulfilled;
@@ -148,12 +151,8 @@ export const collectionApi = apiSlice.injectEndpoints({
                         SuccessToast(" Success");
                     }
                 }catch(err) {
-                    console.log(err);
+                    //console.log(err);
                     let status = err?.error?.status;
-                    if(status === 403){
-                        ErrorToast("Failld ! This category is associated with Product");
-                    }
-
                 }
             }
         }),
@@ -161,4 +160,4 @@ export const collectionApi = apiSlice.injectEndpoints({
 })
 
 
-export const {useGetProductsQuery,useGetProductQuery, useCreateCollectionMutation, useUpdateProductMutation, useUpdateProductWithImageMutation, useDeleteProductImageMutation, useDeleteProductMutation} = collectionApi;
+export const {useGetCollectionsQuery,useGetCollectionQuery, useCreateCollectionMutation, useUpdateCollectionMutation, useUpdateCollectionWithImageMutation, useDeleteProductImageMutation, useDeleteCollectionMutation} = collectionApi;

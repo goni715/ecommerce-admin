@@ -1,7 +1,9 @@
 import {BrowserRouter, Route, Routes} from "react-router-dom";
 import DashboardPage from "./pages/DashboardPage.jsx";
-import CreateCollectionPage from "./pages/CreateCollectionPage.jsx";
+import CollectionCreatePage from "./pages/CollectionCreatePage.jsx";
 import Layout from "./components/Layout/Layout.jsx";
+import CollectionListPage from "./pages/CollectionListPage.jsx";
+import CollectionEditPage from "./pages/CollectionEditPage.jsx";
 
 
 const App = () => {
@@ -11,7 +13,9 @@ const App = () => {
                 <Routes>
                     <Route path="/" element={<Layout/>}>
                         <Route index element={<DashboardPage/>}/>
-                        <Route path="collections" element={<CreateCollectionPage/>} />
+                        <Route path="collections" element={<CollectionListPage/>} />
+                        <Route path="collections/new" element={<CollectionCreatePage/>} />
+                        <Route path="collections/:id" element={<CollectionEditPage/>} />
                     </Route>
                 </Routes>
             </BrowserRouter>
